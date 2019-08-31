@@ -43,15 +43,15 @@ validation_init_op = iterator.make_initializer(validation_dataset)
 frames, speeds = iterator.get_next()
 
 # 5x640x480x3 -> 5x320x240x8
-conv1 = tf.layers.conv3d(frames, 8, (3, 3, 3), strides = (1, 2, 2), padding='same')
+conv1 = tf.layers.conv3d(frames, 8, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 # 5x320x240x8 -> 5x160x120x16
-conv2 = tf.layers.conv3d(conv1, 16, (3, 3, 3), strides = (1, 2, 2), padding='same')
+conv2 = tf.layers.conv3d(conv1, 16, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 # 5x160x120x16 -> 5x80x60x32
-conv3 = tf.layers.conv3d(conv2, 32, (3, 3, 3), strides = (1, 2, 2), padding='same')
+conv3 = tf.layers.conv3d(conv2, 32, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 # 5x80x60x32 -> 5x40x30x64
-conv4 = tf.layers.conv3d(conv3, 64, (3, 3, 3), strides = (1, 2, 2), padding='same')
+conv4 = tf.layers.conv3d(conv3, 64, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 # 5x40x30x64 -> 5x20x15x64
-conv5 = tf.layers.conv3d(conv4, 64, (3, 3, 3), strides = (1, 2, 2), padding='same')
+conv5 = tf.layers.conv3d(conv4, 64, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 
 out = tf.reshape(conv5, (-1, 5*20*15*64))
 out = tf.layers.dense(out, 1)
