@@ -62,15 +62,18 @@ with tf.Session() as sess:
         sess.run(training_init_op)
         i = 0
         previous_step_time = time.time()
+        losses = []
         while True:
             try:
                 i += 1
                 l, _ = sess.run((loss, train_step))
+                losses.append(l)
                 if i % 100 == 0:
                     current_step_time = time.time()
                     time_elapsed = current_step_time - previous_step_time
-                    print('epoch {:d} - step {:d} - time {:.2f}s : loss {:.4f}'.format(epoch, i, time_elapsed, l))
+                    print('epoch {:d} - step {:d} - time {:.2f}s : loss {:.4f}'.format(epoch, i, time_elapsed, np.mean(losses)))
                     previous_step_time = current_step_time
+                    losses = []
             except tf.errors.OutOfRangeError:
                 break
 
