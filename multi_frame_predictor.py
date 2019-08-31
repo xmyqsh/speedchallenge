@@ -24,10 +24,11 @@ def parse_record(tfrecord):
 def load_dataset(filename):
     raw_dataset = tf.data.TFRecordDataset(filename)
 
-    dataset = raw_dataset.map(parse_record)
+    dataset = raw_dataset.map(parse_record, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     dataset = dataset.apply(tf.contrib.data.sliding_window_batch(5))
     dataset = dataset.shuffle(1000)
     dataset = dataset.batch(20)
+    dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
 
 training_dataset = load_dataset("D:\\speedchallenge\\temporal\\train.tfrecords")
