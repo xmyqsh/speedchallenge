@@ -43,16 +43,23 @@ validation_init_op = iterator.make_initializer(validation_dataset)
 # frame is 5 x 640 x 480 x 3 pixels, speed is a float
 frames, speeds = iterator.get_next()
 
+training = tf.placeholder(tf.bool)
+
 # 5x640x480x3 -> 5x320x240x8
 conv1 = tf.layers.conv3d(frames, 8, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
+conv1 = tf.layers.batch_normalization(conv1, training=training)
 # 5x320x240x8 -> 5x160x120x16
 conv2 = tf.layers.conv3d(conv1, 16, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
+conv2 = tf.layers.batch_normalization(conv2, training=training)
 # 5x160x120x16 -> 5x80x60x32
 conv3 = tf.layers.conv3d(conv2, 32, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
+conv3 = tf.layers.batch_normalization(conv3, training=training)
 # 5x80x60x32 -> 5x40x30x64
 conv4 = tf.layers.conv3d(conv3, 64, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
+conv4 = tf.layers.batch_normalization(conv4, training=training)
 # 5x40x30x64 -> 5x20x15x64
 conv5 = tf.layers.conv3d(conv4, 64, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
+conv5 = tf.layers.batch_normalization(conv5, training=training)
 
 out = tf.reshape(conv5, (-1, 5*20*15*64))
 out = tf.layers.dense(out, 1)
@@ -63,6 +70,8 @@ speed = tf.expand_dims(speed, 1)
 loss = tf.losses.mean_squared_error(speed, out)
 
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+train_step = tf.group([train_step, update_ops])
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -74,7 +83,7 @@ with tf.Session() as sess:
         while True:
             try:
                 i += 1
-                l, _ = sess.run((loss, train_step))
+                l, _ = sess.run((loss, train_step), feed_dict={training: True})
                 losses.append(l)
                 if i % 100 == 0:
                     current_step_time = time.time()
@@ -89,7 +98,7 @@ with tf.Session() as sess:
         validation_losses = []
         while True:
             try:
-                validation_loss = sess.run(loss)
+                validation_loss = sess.run(loss, feed_dict={training: False})
                 validation_losses.append(validation_loss)
             except tf.errors.OutOfRangeError:
                 break
