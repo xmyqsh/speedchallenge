@@ -64,6 +64,10 @@ conv5 = tf.layers.conv3d(conv4, 64, (3, 3, 3), strides = (1, 2, 2), padding='sam
 conv5 = tf.layers.batch_normalization(conv5, training=training)
 
 out = tf.reshape(conv5, (-1, 5*20*15*64))
+
+dropout_rate = tf.placeholder(tf.float32)
+out = tf.layers.dropout(out, rate=dropout_rate)
+
 out = tf.layers.dense(out, 1)
 
 # predict the speed at the middle frame
@@ -85,7 +89,7 @@ with tf.Session() as sess:
         while True:
             try:
                 i += 1
-                l, _ = sess.run((loss, train_step), feed_dict={training: True})
+                l, _ = sess.run((loss, train_step), feed_dict={training: True, dropout_rate: 0.4})
                 losses.append(l)
                 if i % 100 == 0:
                     current_step_time = time.time()
@@ -100,7 +104,7 @@ with tf.Session() as sess:
         validation_losses = []
         while True:
             try:
-                validation_loss = sess.run(loss, feed_dict={training: False})
+                validation_loss = sess.run(loss, feed_dict={training: False, dropout_rate: 0.0})
                 validation_losses.append(validation_loss)
             except tf.errors.OutOfRangeError:
                 break
