@@ -11,6 +11,7 @@ def parse_record(tfrecord, training):
     proto = tf.parse_single_example(tfrecord, image_feature_description)
 
     image = tf.image.decode_jpeg(proto['image_raw'], channels=3)
+    image = tf.image.crop_to_bounding_box(image, 200, 0, 160, 640)
     if training:
         image = tf.image.random_flip_left_right(image)
         image = tf.image.random_hue(image, 0.08)
@@ -47,23 +48,23 @@ frames, speeds = iterator.get_next()
 
 training = tf.placeholder(tf.bool)
 
-# 5x640x480x3 -> 5x320x240x8
+# 5x640x160x3 -> 5x320x80x8
 conv1 = tf.layers.conv3d(frames, 8, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 conv1 = tf.layers.batch_normalization(conv1, training=training)
-# 5x320x240x8 -> 5x160x120x16
+# 5x320x80x8 -> 5x160x40x16
 conv2 = tf.layers.conv3d(conv1, 16, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 conv2 = tf.layers.batch_normalization(conv2, training=training)
-# 5x160x120x16 -> 5x80x60x32
+# 5x160x40x16 -> 5x80x20x32
 conv3 = tf.layers.conv3d(conv2, 32, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 conv3 = tf.layers.batch_normalization(conv3, training=training)
-# 5x80x60x32 -> 5x40x30x64
+# 5x80x20x32 -> 5x40x10x64
 conv4 = tf.layers.conv3d(conv3, 64, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 conv4 = tf.layers.batch_normalization(conv4, training=training)
-# 5x40x30x64 -> 5x20x15x64
+# 5x40x10x64 -> 5x20x5x64
 conv5 = tf.layers.conv3d(conv4, 64, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
 conv5 = tf.layers.batch_normalization(conv5, training=training)
 
-out = tf.reshape(conv5, (-1, 5*20*15*64))
+out = tf.reshape(conv5, (-1, 5*20*5*64))
 
 dropout_rate = tf.placeholder(tf.float32)
 out = tf.layers.dropout(out, rate=dropout_rate)
