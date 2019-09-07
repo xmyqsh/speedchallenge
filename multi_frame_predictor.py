@@ -34,6 +34,27 @@ def load_dataset(filename, training):
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
 
+def residual_block(input, channels, downsample, training):
+    shortcut = input
+    strides = (1, 1, 1)
+    if downsample:
+        strides = (1, 2, 2)
+        shortcut = tf.layers.conv3d(input, channels, (1, 1, 1), strides=strides, padding='same')
+        shortcut = tf.layers.batch_normalization(shortcut, training=training)
+        
+    conv1 = tf.layers.conv3d(input, channels, (3, 3, 3), strides=(1, 1, 1), padding='same')
+    conv1 = tf.layers.batch_normalization(conv1, training=training)
+    conv1 = tf.nn.relu(conv1)
+
+    conv2 = tf.layers.conv3d(conv1, channels, (3, 3, 3), strides=strides, padding='same')
+    conv2 = tf.layers.batch_normalization(conv2, training=training)
+
+
+    conv2 += shortcut
+    output = tf.nn.relu(conv2)
+
+    return output
+
 training_dataset = load_dataset("D:\\speedchallenge\\temporal\\train.tfrecords", True)
 validation_dataset = load_dataset("D:\\speedchallenge\\temporal\\validation.tfrecords", False)
 
@@ -48,23 +69,13 @@ frames, speeds = iterator.get_next()
 
 training = tf.placeholder(tf.bool)
 
-# 5x640x160x3 -> 5x320x80x8
-conv1 = tf.layers.conv3d(frames, 8, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
-conv1 = tf.layers.batch_normalization(conv1, training=training)
-# 5x320x80x8 -> 5x160x40x16
-conv2 = tf.layers.conv3d(conv1, 16, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
-conv2 = tf.layers.batch_normalization(conv2, training=training)
-# 5x160x40x16 -> 5x80x20x32
-conv3 = tf.layers.conv3d(conv2, 32, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
-conv3 = tf.layers.batch_normalization(conv3, training=training)
-# 5x80x20x32 -> 5x40x10x64
-conv4 = tf.layers.conv3d(conv3, 64, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
-conv4 = tf.layers.batch_normalization(conv4, training=training)
-# 5x40x10x64 -> 5x20x5x64
-conv5 = tf.layers.conv3d(conv4, 64, (3, 3, 3), strides = (1, 2, 2), padding='same', activation=tf.nn.relu)
-conv5 = tf.layers.batch_normalization(conv5, training=training)
+out = frames
+# 5x640x160x3 -> 5x20x5x64
+for i in range(5):
+    out = residual_block(out, 64, True, training)
 
-out = tf.reshape(conv5, (-1, 5*20*5*64))
+
+out = tf.reshape(out, (-1, 5*20*5*64))
 
 dropout_rate = tf.placeholder(tf.float32)
 out = tf.layers.dropout(out, rate=dropout_rate)
