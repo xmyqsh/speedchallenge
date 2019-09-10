@@ -7,6 +7,8 @@ image_feature_description = {
     'label': tf.FixedLenFeature([], tf.float32),
 }
 
+WINDOW_SIZE = 5
+
 def parse_record(tfrecord, training):
     proto = tf.parse_single_example(tfrecord, image_feature_description)
 
@@ -27,7 +29,7 @@ def load_dataset(filename, training):
     raw_dataset = tf.data.TFRecordDataset(filename)
 
     dataset = raw_dataset.map(lambda x: parse_record(x, training), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    dataset = dataset.apply(tf.contrib.data.sliding_window_batch(5))
+    dataset = dataset.apply(tf.contrib.data.sliding_window_batch(WINDOW_SIZE))
     if training:
         dataset = dataset.shuffle(1000)
     dataset = dataset.batch(20)
@@ -72,24 +74,27 @@ training = tf.placeholder(tf.bool)
 out = frames
 # 5x640x160x3 -> 5x20x5x64
 for i in range(5):
-    out = residual_block(out, 64, True, training)
+    out = residual_block(out, 4 * 2**i, True, training)
 
 
-out = tf.reshape(out, (-1, 5*20*5*64))
+out = tf.reshape(out, (-1, WINDOW_SIZE*20*5*64))
 
 dropout_rate = tf.placeholder(tf.float32)
 out = tf.layers.dropout(out, rate=dropout_rate)
 
-out = tf.layers.dense(out, 1)
+out = tf.layers.dense(out, WINDOW_SIZE)
 
-# predict the speed at the middle frame
-speed = speeds[:,2]
-speed = tf.expand_dims(speed, 1)
-loss = tf.losses.mean_squared_error(speed, out)
+loss = tf.losses.mean_squared_error(speeds, out)
 
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 train_step = tf.group([train_step, update_ops])
+
+# validation loss is the predicted at the middle frame
+speed = speeds[:, WINDOW_SIZE//2]
+predicted_speed = out[:, WINDOW_SIZE//2]
+
+validation_loss = tf.losses.mean_squared_error(speed, predicted_speed)
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -116,8 +121,8 @@ with tf.Session() as sess:
         validation_losses = []
         while True:
             try:
-                validation_loss = sess.run(loss, feed_dict={training: False, dropout_rate: 0.0})
-                validation_losses.append(validation_loss)
+                v_loss = sess.run(validation_loss, feed_dict={training: False, dropout_rate: 0.0})
+                validation_losses.append(v_loss)
             except tf.errors.OutOfRangeError:
                 break
         print('\n\nmse after {} epochs: {:.4f}\n\n'.format(epoch, np.mean(validation_losses)))
