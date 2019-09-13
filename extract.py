@@ -13,49 +13,57 @@ def write_records(examples, path):
     for e in examples:
         writer.write(e)
 
+def create_records(cam, speeds):
+    current_frame = 0
+    examples = []
 
-cam = cv2.VideoCapture("data\\train.mp4")
-speeds = open("data\\train.txt", 'r').readlines()
+    while(True):
+        ret, frame = cam.read()
 
-
-current_frame = 0
-examples = []
-
-while(True):
-    ret, frame = cam.read()
-
-    if ret:
-        speed = speeds[current_frame]
-        print("Creating {}, speed {}".format(current_frame, speed))
-
-        ret, jpg = cv2.imencode(".jpg", frame)
         if ret:
-            example = tf.train.Example(features=tf.train.Features(feature={
-                'image_raw': _bytes_feature(jpg.tostring()),
-                'label': _float_feature(float(speed))
-            }))
-            examples.append(example.SerializeToString())
+            speed = speeds[current_frame]
+            # print("Creating {}, speed {}".format(current_frame, speed))
+
+            ret, jpg = cv2.imencode(".jpg", frame)
+            if ret:
+                example = tf.train.Example(features=tf.train.Features(feature={
+                    'image_raw': _bytes_feature(jpg.tostring()),
+                    'label': _float_feature(speed)
+                }))
+                examples.append(example.SerializeToString())
+            else:
+                break
+
+            current_frame += 1
         else:
             break
 
-        current_frame += 1
-    else:
-        break
+    return examples
 
-cam.release()
-cv2.destroyAllWindows()
+def main():
+    cam = cv2.VideoCapture("data\\train.mp4")
+    speeds = open("data\\train.txt", 'r').readlines()
+    speeds = list(map(lambda x: float(x), speeds))
+
+    examples = create_records(cam, speeds)
+
+    cam.release()
+    cv2.destroyAllWindows()
 
 
-temporal_train_examples = examples[:16320]
-temporal_validation_examples = examples[16320:]
+    temporal_train_examples = examples[:16320]
+    temporal_validation_examples = examples[16320:]
 
-write_records(temporal_train_examples, "D:\\speedchallenge\\temporal\\train.tfrecords")
-write_records(temporal_validation_examples, "D:\\speedchallenge\\temporal\\validation.tfrecords")
+    write_records(temporal_train_examples, "D:\\speedchallenge\\temporal\\train.tfrecords")
+    write_records(temporal_validation_examples, "D:\\speedchallenge\\temporal\\validation.tfrecords")
 
-random_examples = np.random.permutation(examples)
+    random_examples = np.random.permutation(examples)
 
-random_train_examples = random_examples[:16320]
-random_validation_examples = random_examples[16320:]
+    random_train_examples = random_examples[:16320]
+    random_validation_examples = random_examples[16320:]
 
-write_records(random_train_examples, "D:\\speedchallenge\\random\\train.tfrecords")
-write_records(random_validation_examples, "D:\\speedchallenge\\random\\validation.tfrecords")
+    write_records(random_train_examples, "D:\\speedchallenge\\random\\train.tfrecords")
+    write_records(random_validation_examples, "D:\\speedchallenge\\random\\validation.tfrecords")
+
+if __name__ == '__main__':
+    main()
