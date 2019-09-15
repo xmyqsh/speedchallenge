@@ -13,6 +13,7 @@ def parse_record(tfrecord, training):
     proto = tf.parse_single_example(tfrecord, image_feature_description)
 
     image = tf.image.decode_jpeg(proto['image_raw'], channels=3)
+    image = tf.image.resize(image, (480, 640))
     image = tf.image.crop_to_bounding_box(image, 200, 0, 160, 640)
     if training:
         image = tf.image.random_flip_left_right(image)
@@ -25,14 +26,20 @@ def parse_record(tfrecord, training):
 
     return image, proto['label']
 
-def load_dataset(filename, training):
+def load_tfrecord(filename, training):
     raw_dataset = tf.data.TFRecordDataset(filename)
 
     dataset = raw_dataset.map(lambda x: parse_record(x, training), num_parallel_calls=tf.data.experimental.AUTOTUNE)
     dataset = dataset.apply(tf.contrib.data.sliding_window_batch(WINDOW_SIZE))
+    return dataset
+
+def load_dataset(glob_pattern, training):
+    files = tf.data.Dataset.list_files(glob_pattern)
+
+    dataset = files.interleave(lambda x: load_tfrecord(x, training), 32, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     if training:
-        dataset = dataset.shuffle(1000)
-    dataset = dataset.batch(20)
+        dataset = dataset.shuffle(7000)
+    dataset = dataset.batch(60)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
 
@@ -57,8 +64,8 @@ def residual_block(input, channels, downsample, training):
 
     return output
 
-training_dataset = load_dataset("D:\\speedchallenge\\temporal\\train.tfrecords", True)
-validation_dataset = load_dataset("D:\\speedchallenge\\temporal\\validation.tfrecords", False)
+training_dataset = load_dataset("D:\\commaai\\segments\\*", True)
+validation_dataset = load_dataset("D:\\speedchallenge\\temporal\\*", False)
 
 iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
                                            training_dataset.output_shapes)
