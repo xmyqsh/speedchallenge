@@ -29,17 +29,17 @@ def parse_record(tfrecord, training):
 def load_tfrecord(filename, training):
     raw_dataset = tf.data.TFRecordDataset(filename)
 
-    dataset = raw_dataset.map(lambda x: parse_record(x, training), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    dataset = raw_dataset.map(lambda x: parse_record(x, training))
     dataset = dataset.apply(tf.contrib.data.sliding_window_batch(WINDOW_SIZE))
     return dataset
 
 def load_dataset(glob_pattern, training):
     files = tf.data.Dataset.list_files(glob_pattern)
 
-    dataset = files.interleave(lambda x: load_tfrecord(x, training), 32, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    dataset = files.interleave(lambda x: load_tfrecord(x, training), 2000, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     if training:
-        dataset = dataset.shuffle(7000)
-    dataset = dataset.batch(60)
+        dataset = dataset.shuffle(4000)
+    dataset = dataset.batch(100)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
 
