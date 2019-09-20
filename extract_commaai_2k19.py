@@ -21,7 +21,11 @@ def extract_segment(segment_info):
 
     print(len(examples))
 
-    write_records(examples, "/mnt/d/commaai/segments/segment_{}.tfrecords".format(num))
+    evens = examples[::2]
+    write_records(evens, "/mnt/d/commaai/segments/segment_{}_evens.tfrecord".format(num))
+
+    odds = examples[1::2]
+    write_records(odds, "/mnt/d/commaai/segments/segment_{}_odds.tfrecord".format(num))
 
 
 
@@ -36,4 +40,4 @@ print(enumerated_dirs[:10])
 with Pool(32) as p:
     p.map(extract_segment, enumerated_dirs)
 
-# extract_segment("/mnt/d/commaai/comma2k19/Chunk_1/b0c9d2329ad1606b_2018-07-27--06-03-57/3", 1)
+# extract_segment((1, "/mnt/d/commaai/comma2k19/Chunk_1/b0c9d2329ad1606b_2018-07-27--06-03-57/3"))
