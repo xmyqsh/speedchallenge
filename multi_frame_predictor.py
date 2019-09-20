@@ -16,7 +16,6 @@ def parse_record(tfrecord, training):
     image = tf.image.resize(image, (480, 640))
     image = tf.image.crop_to_bounding_box(image, 200, 0, 160, 640)
     if training:
-        image = tf.image.random_flip_left_right(image)
         image = tf.image.random_hue(image, 0.08)
         image = tf.image.random_saturation(image, 0.6, 1.6)
         image = tf.image.random_brightness(image, 0.05)
