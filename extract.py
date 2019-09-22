@@ -56,17 +56,19 @@ def main():
 
     temporal_train_examples = examples[:16320]
     temporal_validation_examples = examples[16320:]
+    
+    temporal_train_examples_evens = temporal_train_examples[::2]
+    temporal_validation_examples_evens = temporal_validation_examples[::2]
 
-    write_records(temporal_train_examples, "D:\\speedchallenge\\temporal\\train.tfrecords")
-    write_records(temporal_validation_examples, "D:\\speedchallenge\\temporal\\validation.tfrecords")
+    write_records(temporal_train_examples_evens, "D:\\speedchallenge\\temporal\\train_evens.tfrecord")
+    write_records(temporal_validation_examples_evens, "D:\\speedchallenge\\temporal\\validation_evens.tfrecord")
 
-    random_examples = np.random.permutation(examples)
+    temporal_train_examples_odds = temporal_train_examples[1::2]
+    temporal_validation_examples_odds = temporal_validation_examples[1::2]
 
-    random_train_examples = random_examples[:16320]
-    random_validation_examples = random_examples[16320:]
+    write_records(temporal_train_examples_odds, "D:\\speedchallenge\\temporal\\train_odds.tfrecord")
+    write_records(temporal_validation_examples_odds, "D:\\speedchallenge\\temporal\\validation_odds.tfrecord")
 
-    write_records(random_train_examples, "D:\\speedchallenge\\random\\train.tfrecords")
-    write_records(random_validation_examples, "D:\\speedchallenge\\random\\validation.tfrecords")
 
 if __name__ == '__main__':
     main()
