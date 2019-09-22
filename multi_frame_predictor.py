@@ -32,12 +32,8 @@ def load_tfrecord(filename, training):
     dataset = dataset.apply(tf.contrib.data.sliding_window_batch(WINDOW_SIZE))
     return dataset
 
-def load_dataset(glob_pattern, training):
-    files = tf.data.Dataset.list_files(glob_pattern)
-
-    dataset = files.interleave(lambda x: load_tfrecord(x, training), 2000, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    if training:
-        dataset = dataset.shuffle(4000)
+def load_dataset(files, training):
+    dataset = files.interleave(lambda x: load_tfrecord(x, training), 500, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     dataset = dataset.batch(100)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
@@ -63,8 +59,11 @@ def residual_block(input, channels, downsample, training):
 
     return output
 
-training_dataset = load_dataset("D:\\commaai\\segments\\*", True)
-validation_dataset = load_dataset("D:\\speedchallenge\\temporal\\*", False)
+training_records = tf.data.Dataset.list_files("D:\\commaai\\segments\\*.tfrecord").concatenate(tf.data.Dataset.list_files("D:\\waymo\\segments\\*"))
+training_records = training_records.shuffle(10000)
+training_dataset = load_dataset(training_records, True)
+validation_records = tf.data.Dataset.list_files("D:\\speedchallenge\\temporal\\*.tfrecord")
+validation_dataset = load_dataset(validation_records, False)
 
 iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
                                            training_dataset.output_shapes)
