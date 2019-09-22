@@ -6,6 +6,7 @@ import itertools
 from extract import create_record, write_records
 import glob
 from multiprocessing import Pool
+import cv2
 
 tf.enable_eager_execution()
 
@@ -29,7 +30,10 @@ def extract_segment(segment_info):
         image = frame.images[0]
         speed = np.linalg.norm([image.velocity.v_x, image.velocity.v_y, image.velocity.v_z])
 
-        examples.append(create_record(image.image, speed))
+        image_buffer = np.fromstring(image.image, np.uint8)
+        cv2_image = cv2.imdecode(image_buffer, -1)
+
+        examples.append(create_record(cv2_image, speed))
 
     write_records(examples, "/mnt/d/waymo/segments/segment_{}.tfrecord".format(i))
 

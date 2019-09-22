@@ -13,7 +13,13 @@ def write_records(examples, path):
     for e in examples:
         writer.write(e)
 
-def create_record(image_bytes, speed):
+def create_record(image, speed):
+    image = cv2.resize(image, (640, 480), interpolation=cv2.INTER_AREA)
+    ret, jpg = cv2.imencode(".jpg", image)
+    if not ret:
+        raise Exception("couldn't encode the image")
+
+    image_bytes = jpg.tostring()
     example = tf.train.Example(features=tf.train.Features(feature={
         'image_raw': _bytes_feature(image_bytes),
         'label': _float_feature(speed)
@@ -31,11 +37,7 @@ def create_records(cam, speeds):
         if ret:
             speed = speeds[current_frame]
 
-            ret, jpg = cv2.imencode(".jpg", frame)
-            if ret:
-                examples.append(create_record(jpg.tostring(), speed))
-            else:
-                break
+            examples.append(create_record(frame, speed))
 
             current_frame += 1
         else:
