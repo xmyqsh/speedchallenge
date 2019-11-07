@@ -3,16 +3,15 @@ import time
 import numpy as np
 
 image_feature_description = {
-    'image_raw': tf.FixedLenFeature([], tf.string),
-    'label': tf.FixedLenFeature([], tf.float32),
+    'frame_one': tf.FixedLenFeature([], tf.string),
+    'frame_two': tf.FixedLenFeature([], tf.string),
+    'position': tf.FixedLenFeature([3], tf.float32),
+    'orientation': tf.FixedLenFeature([3], tf.float32),
+    'speed': tf.FixedLenFeature([], tf.float32),
 }
 
-WINDOW_SIZE = 5
-
-def parse_record(tfrecord, training):
-    proto = tf.parse_single_example(tfrecord, image_feature_description)
-
-    image = tf.image.decode_jpeg(proto['image_raw'], channels=3)
+def decode_and_process_frame(frame, training):
+    image = tf.image.decode_jpeg(frame, channels=3)
     image = tf.image.resize(image, (480, 640))
     image = tf.image.crop_to_bounding_box(image, 200, 0, 160, 640)
     if training:
@@ -23,47 +22,30 @@ def parse_record(tfrecord, training):
 
     image = tf.image.convert_image_dtype(image, tf.float32)
 
-    return image, proto['label']
+    return image
+
+def parse_record(tfrecord, training):
+    proto = tf.parse_single_example(tfrecord, image_feature_description)
+
+    frame_one = decode_and_process_frame(proto['frame_one'], training)
+    frame_two = decode_and_process_frame(proto['frame_two'], training)
+
+    image = tf.concat((frame_one, frame_two), axis=1)
+
+    return image, proto['position'], proto['orientation'], proto['speed']
 
 def load_tfrecord(filename, training):
     raw_dataset = tf.data.TFRecordDataset(filename)
 
-    dataset = raw_dataset.map(lambda x: parse_record(x, training))
-    dataset = dataset.apply(tf.contrib.data.sliding_window_batch(WINDOW_SIZE))
-    return dataset
-
-def load_dataset(files, training):
-    dataset = files.interleave(lambda x: load_tfrecord(x, training), 500, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    dataset = raw_dataset.map(lambda x: parse_record(x, training), num_parallel_calls=tf.data.experimental.AUTOTUNE)
     dataset = dataset.batch(100)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
 
-def residual_block(input, channels, downsample, training):
-    shortcut = input
-    strides = (1, 1, 1)
-    if downsample:
-        strides = (1, 2, 2)
-        shortcut = tf.layers.conv3d(input, channels, (1, 1, 1), strides=strides, padding='same')
-        shortcut = tf.layers.batch_normalization(shortcut, training=training)
-        
-    conv1 = tf.layers.conv3d(input, channels, (3, 3, 3), strides=(1, 1, 1), padding='same')
-    conv1 = tf.layers.batch_normalization(conv1, training=training)
-    conv1 = tf.nn.relu(conv1)
+dataset = load_tfrecord("/mnt/Bulk Storage/commaai/monolithic_train.tfrecord", False)
 
-    conv2 = tf.layers.conv3d(conv1, channels, (3, 3, 3), strides=strides, padding='same')
-    conv2 = tf.layers.batch_normalization(conv2, training=training)
-
-
-    conv2 += shortcut
-    output = tf.nn.relu(conv2)
-
-    return output
-
-training_records = tf.data.Dataset.list_files("D:\\commaai\\segments\\*.tfrecord").concatenate(tf.data.Dataset.list_files("D:\\waymo\\segments\\*"))
-training_records = training_records.shuffle(10000)
-training_dataset = load_dataset(training_records, True)
-validation_records = tf.data.Dataset.list_files("D:\\speedchallenge\\temporal\\*.tfrecord")
-validation_dataset = load_dataset(validation_records, False)
+training_dataset = load_tfrecord("/mnt/Bulk Storage/commaai/monolithic_train.tfrecord", True)
+validation_dataset = load_tfrecord("/mnt/Bulk Storage/commaai/monolithic_validation.tfrecord", False)
 
 iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
                                            training_dataset.output_shapes)
@@ -71,35 +53,31 @@ iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
 training_init_op = iterator.make_initializer(training_dataset)
 validation_init_op = iterator.make_initializer(validation_dataset)
 
-# frame is 5 x 640 x 480 x 3 pixels, speed is a float
-frames, speeds = iterator.get_next()
+# # frame is 5 x 640 x 480 x 3 pixels, speed is a float
+# frames, speeds = iterator.get_next()
+frames, positions, orienations, speeds = iterator.get_next()
 
-training = tf.placeholder(tf.bool)
+gt_pose = tf.concat((positions, orienations), axis=1)
 
-out = frames
-# 5x640x160x3 -> 5x20x5x64
-for i in range(5):
-    out = residual_block(out, 4 * 2**i, True, training)
+conv1 = tf.layers.conv2d(frames, 16, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv2 = tf.layers.conv2d(conv1, 32, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv3 = tf.layers.conv2d(conv2, 64, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv4 = tf.layers.conv2d(conv3, 128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv5 = tf.layers.conv2d(conv4, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
 
+pose = tf.layers.conv2d(conv5, 6, (1, 1), padding='valid')
+pose = tf.reduce_mean(pose, 2)
+pose = tf.reduce_mean(pose, 1)
+pose = 0.01 * tf.reshape(pose, (-1, 6))
 
-out = tf.reshape(out, (-1, WINDOW_SIZE*20*5*64))
-
-dropout_rate = tf.placeholder(tf.float32)
-out = tf.layers.dropout(out, rate=dropout_rate)
-
-out = tf.layers.dense(out, WINDOW_SIZE)
-
-loss = tf.losses.mean_squared_error(speeds, out)
+loss = tf.losses.mean_squared_error(pose, gt_pose)
 
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
-update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-train_step = tf.group([train_step, update_ops])
 
 # validation loss is the predicted at the middle frame
-speed = speeds[:, WINDOW_SIZE//2]
-predicted_speed = out[:, WINDOW_SIZE//2]
+predicted_speed = 20 * tf.norm(pose[:, :3], axis=1)
 
-validation_loss = tf.losses.mean_squared_error(speed, predicted_speed)
+speed_loss = tf.losses.mean_squared_error(speeds, predicted_speed)
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -108,26 +86,33 @@ with tf.Session() as sess:
         i = 0
         previous_step_time = time.time()
         losses = []
+        speed_losses = []
         while True:
             try:
                 i += 1
-                l, _ = sess.run((loss, train_step), feed_dict={training: True, dropout_rate: 0.4})
+                l, sl, _ = sess.run((loss, speed_loss, train_step))
                 losses.append(l)
+                speed_losses.append(sl)
                 if i % 100 == 0:
                     current_step_time = time.time()
                     time_elapsed = current_step_time - previous_step_time
-                    print('epoch {:d} - step {:d} - time {:.2f}s : loss {:.4f}'.format(epoch, i, time_elapsed, np.mean(losses)))
+                    print('epoch {:d} - step {:d} - time {:.2f}s : loss {:.4f} speed loss {:.4f}'.format(epoch, i, time_elapsed, np.mean(losses), np.mean(speed_losses)))
                     previous_step_time = current_step_time
                     losses = []
+                    speed_losses = []
             except tf.errors.OutOfRangeError:
                 break
 
         sess.run(validation_init_op)
-        validation_losses = []
+        losses = []
+        speed_losses = []
+        i = 0
         while True:
             try:
-                v_loss = sess.run(validation_loss, feed_dict={training: False, dropout_rate: 0.0})
-                validation_losses.append(v_loss)
+                i += 1
+                l, sl = sess.run((loss, speed_loss))
+                losses.append(l)
+                speed_losses.append(sl)
             except tf.errors.OutOfRangeError:
                 break
-        print('\n\nmse after {} epochs: {:.4f}\n\n'.format(epoch, np.mean(validation_losses)))
+        print('\n\nafter {} epochs mse: {:.4f}, speed mse: {:.4f}\n\n'.format(epoch, np.mean(losses), np.mean(speed_losses)))
