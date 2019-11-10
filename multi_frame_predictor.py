@@ -51,8 +51,6 @@ iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
 training_init_op = iterator.make_initializer(training_dataset)
 validation_init_op = iterator.make_initializer(validation_dataset)
 
-# # frame is 5 x 640 x 480 x 3 pixels, speed is a float
-# frames, speeds = iterator.get_next()
 frames, positions, orienations, speeds = iterator.get_next()
 
 gt_pose = tf.concat((positions, orienations), axis=1)
@@ -68,7 +66,7 @@ pose = tf.reduce_mean(pose, 2)
 pose = tf.reduce_mean(pose, 1)
 pose = 0.01 * tf.reshape(pose, (-1, 6))
 
-loss = tf.losses.mean_squared_error(pose, gt_pose)
+loss = tf.losses.mean_squared_error(gt_pose, pose)
 
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
