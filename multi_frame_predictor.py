@@ -42,10 +42,8 @@ def load_tfrecord(filename, training):
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
 
-dataset = load_tfrecord("/mnt/Bulk Storage/commaai/monolithic_train.tfrecord", False)
-
-training_dataset = load_tfrecord("/mnt/Bulk Storage/commaai/monolithic_train.tfrecord", True)
-validation_dataset = load_tfrecord("/mnt/Bulk Storage/commaai/monolithic_validation.tfrecord", False)
+training_dataset = load_tfrecord("D:\\commaai\\monolithic_train.tfrecord", True)
+validation_dataset = load_tfrecord("D:\\commaai\\monolithic_validation.tfrecord", False)
 
 iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
                                            training_dataset.output_shapes)
