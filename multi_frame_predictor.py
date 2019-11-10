@@ -22,9 +22,16 @@ def parse_record(tfrecord, training):
     frame_one = decode_and_process_frame(proto['frame_one'], training)
     frame_two = decode_and_process_frame(proto['frame_two'], training)
 
-    image = tf.concat((frame_one, frame_two), axis=1)
+    if tf.random.uniform([]) > 0.5:
+        image = tf.concat((frame_one, frame_two), axis=1)
+        position = proto['position']
+        orienation = proto['orientation']
+    else:
+        image = tf.concat((frame_two, frame_one), axis=1)
+        position = -1 * proto['position']
+        orienation = -1 * proto['orientation']
 
-    return image, proto['position'], proto['orientation'], proto['speed']
+    return image, position, orienation, proto['speed']
 
 def load_tfrecord(filename, training):
     raw_dataset = tf.data.TFRecordDataset(filename)
