@@ -5,7 +5,6 @@ import glob
 from multiprocessing import Pool
 import camera
 import orientation
-import cv2
 import tensorflow as tf
 import random
 
@@ -28,7 +27,6 @@ def relative_orientation(ecef_quat_1, ecef_quat_2):
     return orientation.rot2euler(relative_mat)
 
 def extract_segment(path):
-    frame_times = np.load(path + '/global_pose/frame_times')
     frame_velocities =  np.linalg.norm(np.load(path + '/global_pose/frame_velocities'),axis=1)
     frame_velocities = list(map(lambda x: x.item(), frame_velocities))
 
