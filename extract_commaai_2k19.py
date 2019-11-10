@@ -64,11 +64,20 @@ def extract_segment(path):
         rel_position = camera.device_from_ecef(previous_position, previous_orientation, position)
         rel_orientation = relative_orientation(previous_orientation, orientation)
 
+        rev_rel_position = camera.device_from_ecef(position, orientation, previous_position)
+        rev_rel_orientation = relative_orientation(orientation, previous_orientation)
+        
+        # print("position", rel_position, rev_rel_position)
+        # print("speed", 20 * np.linalg.norm(rel_position), 20 * np.linalg.norm(rev_rel_position), speed)
+        # print("orientation", rel_orientation, rev_rel_orientation)
+
         example = tf.train.Example(features=tf.train.Features(feature={
             'frame_one': _bytes_feature(previous_frame),
             'frame_two': _bytes_feature(frame),
             'position': _float_list_feature(rel_position),
             'orientation': _float_list_feature(rel_orientation),
+            'reverse_position': _float_list_feature(rev_rel_position),
+            'reverse_orientation': _float_list_feature(rev_rel_orientation),
             'speed': _float_feature(speed),
         }))
         examples.append(example.SerializeToString())
