@@ -11,15 +11,7 @@ image_feature_description = {
 }
 
 def decode_and_process_frame(frame, training):
-    image = tf.image.decode_jpeg(frame, channels=3)
-    image = tf.image.resize(image, (480, 640))
-    image = tf.image.crop_to_bounding_box(image, 200, 0, 160, 640)
-    if training:
-        image = tf.image.random_hue(image, 0.08)
-        image = tf.image.random_saturation(image, 0.6, 1.6)
-        image = tf.image.random_brightness(image, 0.05)
-        image = tf.image.random_contrast(image, 0.7, 1.3)
-
+    image = tf.image.decode_and_crop_jpeg(frame, (200, 0, 160, 640), channels=3)
     image = tf.image.convert_image_dtype(image, tf.float32)
 
     return image
