@@ -3,7 +3,12 @@ import tensorflow_probability as tfp
 import time
 import numpy as np
 import loader
+import os
 
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string("checkpoint_dir", None, "Directory to load model state from to resume training.")
 
 training_dataset = loader.load_tfrecord("D:\\commaai\\monolithic_train.tfrecord", True)
 validation_dataset = loader.load_tfrecord("D:\\speedchallenge\\monolithic_test.tfrecord", False)
@@ -40,8 +45,25 @@ speed_loss = tf.losses.mean_squared_error(speeds, predicted_speed)
 
 corr = tfp.stats.correlation(speeds, predicted_speed, sample_axis=0, event_axis=None)
 
+saver = tf.train.Saver(tf.trainable_variables())
+
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
+
+    if FLAGS.checkpoint_dir:
+        checkpoint_dir = FLAGS.checkpoint_dir
+        print('attempting to load checkpoint from {}'.format(checkpoint_dir))
+        
+        checkpoint = tf.train.get_checkpoint_state(checkpoint_dir)
+        if checkpoint and checkpoint.model_checkpoint_path:
+            saver.restore(sess, checkpoint.model_checkpoint_path)
+    else:
+        checkpoint_dir = 'checkpoints/{}'.format(time.strftime("%m_%d_%y-%H_%M"))
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        print('no checkpoint specified, starting training from scratch')
+
+
     for epoch in range(1, 31):
         sess.run(training_init_op)
         i = 0
@@ -62,6 +84,7 @@ with tf.Session() as sess:
                     losses = []
                     speed_losses = []
             except tf.errors.OutOfRangeError:
+                saver.save(sess, checkpoint_dir + "/model")
                 break
 
         sess.run(validation_init_op)
