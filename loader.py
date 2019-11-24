@@ -20,7 +20,7 @@ def parse_record(tfrecord, training):
     frame_one = decode_and_process_frame(proto['frame_one'], training)
     frame_two = decode_and_process_frame(proto['frame_two'], training)
 
-    if True:
+    if tf.random.uniform([]) > 0.5:
         image = tf.concat((frame_one, frame_two), axis=2)
         position = proto['position']
         orienation = proto['orientation']

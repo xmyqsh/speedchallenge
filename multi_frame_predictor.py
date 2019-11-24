@@ -1,11 +1,12 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 import time
 import numpy as np
 import loader
 
 
 training_dataset = loader.load_tfrecord("D:\\commaai\\monolithic_train.tfrecord", True)
-validation_dataset = loader.load_tfrecord("D:\\commaai\\monolithic_validation.tfrecord", False)
+validation_dataset = loader.load_tfrecord("D:\\speedchallenge\\monolithic_test.tfrecord", False)
 
 iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
                                            training_dataset.output_shapes)
@@ -37,6 +38,8 @@ predicted_speed = 20 * tf.norm(pose[:, :3], axis=1)
 
 speed_loss = tf.losses.mean_squared_error(speeds, predicted_speed)
 
+corr = tfp.stats.correlation(speeds, predicted_speed, sample_axis=0, event_axis=None)
+
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     for epoch in range(1, 31):
@@ -62,15 +65,18 @@ with tf.Session() as sess:
                 break
 
         sess.run(validation_init_op)
-        losses = []
+        # losses = []
         speed_losses = []
+        correlations = []
         i = 0
         while True:
             try:
                 i += 1
-                l, sl = sess.run((loss, speed_loss))
-                losses.append(l)
+                sl, c = sess.run((speed_loss, corr))
+                # losses.append(l)
                 speed_losses.append(sl)
+                correlations.append(c)
             except tf.errors.OutOfRangeError:
                 break
-        print('\n\nafter {} epochs mse: {:.4f}, speed mse: {:.4f}\n\n'.format(epoch, np.mean(losses), np.mean(speed_losses)))
+        print('\n\nafter {} epochs speed mse: {:.4f}\n\n'.format(epoch, np.mean(speed_losses)))
+        print('correlations:\n{}\n\n'.format(correlations))
