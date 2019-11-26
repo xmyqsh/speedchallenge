@@ -20,7 +20,7 @@ def parse_record(tfrecord, training):
     frame_one = decode_and_process_frame(proto['frame_one'], training)
     frame_two = decode_and_process_frame(proto['frame_two'], training)
 
-    if tf.random.uniform([]) > 0.5:
+    if (not training) or tf.random.uniform([]) > 0.5:
         image = tf.concat((frame_one, frame_two), axis=2)
         position = proto['position']
         orienation = proto['orientation']
@@ -35,6 +35,8 @@ def load_tfrecord(filename, training):
     raw_dataset = tf.data.TFRecordDataset(filename)
 
     dataset = raw_dataset.map(lambda x: parse_record(x, training), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    if training:
+        dataset = dataset.shuffle(15000)
     dataset = dataset.batch(200)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset

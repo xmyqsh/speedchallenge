@@ -10,7 +10,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string("checkpoint_dir", None, "Directory to load model state from to resume training.")
 
-training_dataset = loader.load_tfrecord("D:\\commaai\\monolithic_train.tfrecord", True)
+training_dataset = loader.load_tfrecord("D:\\commaai\\monolithic.tfrecord", True)
 validation_dataset = loader.load_tfrecord("D:\\speedchallenge\\monolithic_test.tfrecord", False)
 
 iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
