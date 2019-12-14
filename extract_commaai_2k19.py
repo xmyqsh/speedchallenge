@@ -38,7 +38,8 @@ def extract_segment(path):
         ret, frame = cam.read()
 
         if ret:
-            frame = cv2.resize(frame, (640, 480), interpolation=cv2.INTER_AREA)
+            frame = frame[219:-218]
+            frame = cv2.resize(frame, (416, 128), interpolation=cv2.INTER_AREA)
             ret, jpg = cv2.imencode(".jpg", frame)
             if not ret:
                 raise Exception("couldn't encode the image")
@@ -55,34 +56,31 @@ def extract_segment(path):
 
     assert len(frames) == len(frame_positions) == len(frame_orientations)
 
-    previous_position = frame_positions[0]
-    previous_orientation = frame_orientations[0]
-    previous_frame = frames[0]
-
     examples = []
-    for position, orientation, frame, speed in zip(frame_positions[1:], frame_orientations[1:], frames[1:], frame_velocities[1:]):
-        rel_position = camera.device_from_ecef(previous_position, previous_orientation, position)
-        rel_orientation = relative_orientation(previous_orientation, orientation)
+    for i in range(len(frame_positions[:-3])):
+        plus_one_position = camera.device_from_ecef(frame_positions[i], frame_orientations[i], frame_positions[i+1])
+        plus_one_orientation = relative_orientation(frame_orientations[i], frame_orientations[i+1])
 
-        rev_rel_position = camera.device_from_ecef(position, orientation, previous_position)
-        rev_rel_orientation = relative_orientation(orientation, previous_orientation)
+        plus_two_position = camera.device_from_ecef(frame_positions[i], frame_orientations[i], frame_positions[i+2])
+        plus_two_orientation = relative_orientation(frame_orientations[i], frame_orientations[i+2])
+
+        plus_three_position = camera.device_from_ecef(frame_positions[i], frame_orientations[i], frame_positions[i+3])
+        plus_three_orientation = relative_orientation(frame_orientations[i], frame_orientations[i+3])
         
-        # print("position", rel_position, rev_rel_position)
-        # print("speed", 20 * np.linalg.norm(rel_position), 20 * np.linalg.norm(rev_rel_position), speed)
-        # print("orientation", rel_orientation, rev_rel_orientation)
-
         example = tf.train.Example(features=tf.train.Features(feature={
-            'frame_one': _bytes_feature(previous_frame),
-            'frame_two': _bytes_feature(frame),
-            'position': _float_list_feature(rel_position),
-            'orientation': _float_list_feature(rel_orientation),
-            'reverse_position': _float_list_feature(rev_rel_position),
-            'reverse_orientation': _float_list_feature(rev_rel_orientation),
-            'speed': _float_feature(speed),
+            'frame_one': _bytes_feature(frames[i]),
+            'frame_two': _bytes_feature(frames[i+1]),
+            'frame_three': _bytes_feature(frames[i+2]),
+            'frame_four': _bytes_feature(frames[i+3]),
+            'plus_one_position': _float_list_feature(plus_one_position),
+            'plus_one_orientation': _float_list_feature(plus_one_orientation),
+            'plus_two_position': _float_list_feature(plus_two_position),
+            'plus_two_orientation': _float_list_feature(plus_two_orientation),
+            'plus_three_position': _float_list_feature(plus_three_position),
+            'plus_three_orientation': _float_list_feature(plus_three_orientation),
+            'speed': _float_feature(frame_velocities[i]),
         }))
         examples.append(example.SerializeToString())
-
-        previous_position, previous_orientation, previous_frame = position, orientation, frame
 
     return examples
 
@@ -93,7 +91,7 @@ def write_tfrecord(dirs, out):
             example_buffer.extend(extract_segment(dir))
             print("extracted {} segments".format(i))
 
-            if len(example_buffer) > 500000:
+            if len(example_buffer) > 1000000:
                 random.shuffle(example_buffer)
                 for e in example_buffer:
                     writer.write(e)
@@ -106,13 +104,13 @@ def write_tfrecord(dirs, out):
             writer.write(e)
 
 
-segments = glob.glob("/mnt/d/commaai/comma2k19/*/*/*")
+segments = glob.glob("/mnt/Bulk/commaai/comma2k19/*/*/*")
 random.shuffle(segments)
 
 train = segments[:1933]
 validation = segments[1933:]
 
-write_tfrecord(train, "/mnt/d/commaai/monolithic_train.tfrecord")
-write_tfrecord(validation, "/mnt/d/commaai/monolithic_validation.tfrecord")
+write_tfrecord(train, "/mnt/Bulk/commaai/monolithic_train.tfrecord")
+write_tfrecord(validation, "/mnt/Bulk/commaai/monolithic_validation.tfrecord")
 
 # extract_segment("/mnt/d/commaai/comma2k19/Chunk_1/b0c9d2329ad1606b_2018-07-27--06-03-57/3")
