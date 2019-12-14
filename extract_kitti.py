@@ -88,7 +88,7 @@ def pose2mat(pose):
 
     return mat
 
-poses = np.loadtxt("D:\\kitti\\data_odometry_poses\\dataset\\poses\\00.txt")
+poses = np.loadtxt("/mnt/Bulk/kitti/odometry/data_odometry_poses/dataset/poses/00.txt")
 
 pose_deltas = []
 prev_mat = pose2mat(poses[0])
@@ -102,8 +102,7 @@ for pose in poses[1:]:
     prev_mat = curr_mat
 
 
-for pose in pose_deltas[:10]:
-    # print(pose)
+for pose in pose_deltas:
     translation = pose[:,-1]
     rotmat = pose[:,:3]
     euler = mat2euler(rotmat, seq='xyz')
