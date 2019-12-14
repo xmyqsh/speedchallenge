@@ -59,7 +59,8 @@ def main():
         ret, frame = cam.read()
 
         if ret:
-            frame = cv2.resize(frame, (640, 480), interpolation=cv2.INTER_AREA)
+            frame = frame[120:-120]
+            frame = cv2.resize(frame, (416, 128), interpolation=cv2.INTER_AREA)
             ret, jpg = cv2.imencode(".jpg", frame)
             if not ret:
                 raise Exception("couldn't encode the image")
@@ -78,10 +79,14 @@ def main():
         example = tf.train.Example(features=tf.train.Features(feature={
             'frame_one': _bytes_feature(previous_frame),
             'frame_two': _bytes_feature(frame),
-            'position': _float_list_feature([0.0, 0.0, 0.0]),
-            'orientation': _float_list_feature([0.0, 0.0, 0.0]),
-            'reverse_position': _float_list_feature([0.0, 0.0, 0.0]),
-            'reverse_orientation': _float_list_feature([0.0, 0.0, 0.0]),
+            'frame_three': _bytes_feature(b""),
+            'frame_four': _bytes_feature(b""),
+            'plus_one_position': _float_list_feature([0.0, 0.0, 0.0]),
+            'plus_one_orientation': _float_list_feature([0.0, 0.0, 0.0]),
+            'plus_two_position': _float_list_feature([0.0, 0.0, 0.0]),
+            'plus_two_orientation': _float_list_feature([0.0, 0.0, 0.0]),
+            'plus_three_position': _float_list_feature([0.0, 0.0, 0.0]),
+            'plus_three_orientation': _float_list_feature([0.0, 0.0, 0.0]),
             'speed': _float_feature(speed),
         }))
         examples.append(example.SerializeToString())
