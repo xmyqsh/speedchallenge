@@ -11,7 +11,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string("checkpoint_dir", None, "Directory to load model state from to resume training.")
 
 training_dataset = loader.load_tfrecord("/mnt/Bulk/commaai/monolithic_train.tfrecord", True)
-validation_dataset = loader.load_tfrecord("/mnt/Bulk/commaai/monolithic_validation.tfrecord", False)
+validation_dataset = loader.load_tfrecord("/mnt/Bulk/speedchallenge/monolithic_test.tfrecord", False)
 
 iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
                                            training_dataset.output_shapes)
@@ -23,13 +23,13 @@ frames, positions, orienations, speeds = iterator.get_next()
 
 gt_pose = tf.concat((positions, orienations), axis=1)
 
-conv1 = tf.layers.conv2d(frames, 16, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv2 = tf.layers.conv2d(conv1, 32, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv3 = tf.layers.conv2d(conv2, 64, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv4 = tf.layers.conv2d(conv3, 128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv5 = tf.layers.conv2d(conv4, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv6 = tf.layers.conv2d(conv5, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv7 = tf.layers.conv2d(conv6, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
+conv1 = tf.layers.conv2d(frames, 32, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
+conv2 = tf.layers.conv2d(conv1, 64, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
+conv3 = tf.layers.conv2d(conv2, 128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
+conv4 = tf.layers.conv2d(conv3, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
+conv5 = tf.layers.conv2d(conv4, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
+conv6 = tf.layers.conv2d(conv5, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
+conv7 = tf.layers.conv2d(conv6, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
 
 pose = tf.layers.conv2d(conv7, 6, (1, 1), padding='valid')
 pose = tf.reduce_mean(pose, [1, 2])
