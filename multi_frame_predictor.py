@@ -23,20 +23,19 @@ frames, positions, orienations, speeds = iterator.get_next()
 
 gt_pose = tf.concat((positions, orienations), axis=1)
 
-conv1 = tf.layers.conv2d(frames, 32, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv2 = tf.layers.conv2d(conv1, 64, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv3 = tf.layers.conv2d(conv2, 128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv4 = tf.layers.conv2d(conv3, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv5 = tf.layers.conv2d(conv4, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv6 = tf.layers.conv2d(conv5, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
-conv7 = tf.layers.conv2d(conv6, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.05))
+conv1 = tf.layers.conv2d(frames, 32, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv2 = tf.layers.conv2d(conv1, 64, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv3 = tf.layers.conv2d(conv2, 128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv4 = tf.layers.conv2d(conv3, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv5 = tf.layers.conv2d(conv4, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv6 = tf.layers.conv2d(conv5, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+conv7 = tf.layers.conv2d(conv6, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
 
 pose = tf.layers.conv2d(conv7, 6, (1, 1), padding='valid')
 pose = tf.reduce_mean(pose, [1, 2])
 pose = tf.reshape(pose, (-1, 6))
 pose = tf.concat([pose[:, :3] * 0.01, pose[:, 3:6] * 0.001], axis=1)
 
-# loss = tf.losses.mean_squared_error(gt_pose, pose) + tf.losses.get_regularization_loss()
 loss = tf.losses.mean_squared_error(gt_pose, pose)
 
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
