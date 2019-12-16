@@ -25,7 +25,7 @@ def decode_and_process_frame(frame, crop_offset, mirror, training):
         image = tf.image.flip_left_right(image)
 
     image = tf.image.convert_image_dtype(image, tf.float32)
-    # image = tf.image.per_image_standardization(image)
+    image = tf.image.per_image_standardization(image)
 
     return image
 
