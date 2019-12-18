@@ -50,7 +50,7 @@ def parse_record(tfrecord, training):
         orienation = (-1, 1, -1) * orienation
 
     if not training:
-        tf.data.Dataset.from_tensors((image, position, orienation, speed))
+        return tf.data.Dataset.from_tensors((image, position, orienation, speed))
 
     rev_image = tf.concat((frame_two, frame_one), axis=2)
     rev_position = -1 * position
