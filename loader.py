@@ -16,11 +16,11 @@ image_feature_description = {
 
 def decode_and_process_frame(frame, crop_offset, mirror, training):
     image = tf.image.decode_jpeg(frame, channels=3)
-    # if training:
-    #     image = tf.image.random_hue(image, 0.08)
-    #     image = tf.image.random_saturation(image, 0.6, 1.6)
-    #     image = tf.image.random_brightness(image, 0.05)
-    #     image = tf.image.random_contrast(image, 0.7, 1.3)
+    if training:
+        image = tf.image.random_hue(image, 0.08)
+        image = tf.image.random_saturation(image, 0.6, 1.6)
+        image = tf.image.random_brightness(image, 0.05)
+        image = tf.image.random_contrast(image, 0.7, 1.3)
     if mirror:
         image = tf.image.flip_left_right(image)
 
@@ -38,8 +38,8 @@ def parse_record(tfrecord, training):
     #     crop_offset = 0
     crop_offset = 0
 
-    # mirror = (not training) or tf.random_uniform([]) < 0.5
-    mirror = False
+    mirror = (not training) or tf.random_uniform([]) < 0.5
+    # mirror = False
 
     frame_one = decode_and_process_frame(proto['frame_one'], crop_offset, mirror, training)
     die_roll = tf.random_uniform([])
@@ -62,9 +62,9 @@ def parse_record(tfrecord, training):
 
     image = tf.concat((frame_one, frame_two), axis=2)
 
-    # if mirror:
-    #     position = (1, -1, 1) * position
-    #     orienation = (-1, 1, -1) * orienation
+    if mirror:
+        position = (1, -1, 1) * position
+        orienation = (-1, 1, -1) * orienation
 
     if not training:
         tf.data.Dataset.from_tensors((image, position, orienation, speed))
