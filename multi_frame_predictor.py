@@ -4,6 +4,7 @@ import time
 import numpy as np
 import loader
 import os
+import nets
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -23,11 +24,19 @@ frames, positions, orienations, speeds = iterator.get_next()
 
 gt_pose = tf.concat((positions, orienations), axis=1)
 
-conv1 = tf.layers.conv2d(frames, 32, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu)
-conv2 = tf.layers.conv2d(conv1, 64, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
-conv3 = tf.layers.conv2d(conv2, 128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
-conv4 = tf.layers.conv2d(conv3, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
-conv5 = tf.layers.conv2d(conv4, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+training = tf.placeholder(tf.bool)
+
+# conv1 = tf.layers.conv2d(frames, 32, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu)
+# conv1 = tf.layers.batch_normalization(conv1, training=training)
+# conv2 = tf.layers.conv2d(conv1, 64, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
+# conv2 = tf.layers.batch_normalization(conv2, training=training)
+# conv3 = tf.layers.conv2d(conv2, 128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+# conv3 = tf.layers.batch_normalization(conv2, training=training)
+# conv4 = tf.layers.conv2d(conv3, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+# conv4 = tf.layers.batch_normalization(conv4, training=training)
+# conv5 = tf.layers.conv2d(conv4, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
+# conv5 = tf.layers.batch_normalization(conv5, training=training)
+conv5, (conv4, conv3, conv2, conv1) = nets.encoder_resnet(frames, None, training)
 conv6 = tf.layers.conv2d(conv5, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
 conv7 = tf.layers.conv2d(conv6, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
 
@@ -39,6 +48,7 @@ pose = tf.concat([pose[:, :3] * 0.01, pose[:, 3:6] * 0.001], axis=1)
 loss = tf.losses.mean_squared_error(gt_pose, pose)
 
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
 # validation loss is the predicted at the middle frame
 predicted_speed = 20 * tf.norm(pose[:, :3], axis=1)
@@ -75,7 +85,7 @@ with tf.Session() as sess:
         while True:
             try:
                 i += 1
-                l, sl, _ = sess.run((loss, speed_loss, train_step))
+                l, sl, _, _ = sess.run((loss, speed_loss, train_step, update_ops), {training: True})
                 losses.append(l)
                 speed_losses.append(sl)
                 if i % 100 == 0:
@@ -86,7 +96,7 @@ with tf.Session() as sess:
                     losses = []
                     speed_losses = []
             except tf.errors.OutOfRangeError:
-                saver.save(sess, checkpoint_dir + "/model")
+                saver.save(sess, checkpoint_dir + "/model", global_step=epoch)
                 break
 
         sess.run(validation_init_op)
@@ -97,7 +107,7 @@ with tf.Session() as sess:
         while True:
             try:
                 i += 1
-                sl, c = sess.run((speed_loss, corr))
+                sl, c = sess.run((speed_loss, corr), {training: False})
                 # losses.append(l)
                 speed_losses.append(sl)
                 correlations.append(c)
