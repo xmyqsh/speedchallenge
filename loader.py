@@ -14,7 +14,7 @@ image_feature_description = {
     'speed': tf.FixedLenFeature([], tf.float32),
 }
 
-def decode_and_process_frame(frame, crop_offset, mirror, training):
+def decode_and_process_frame(frame, mirror, training):
     image = tf.image.decode_jpeg(frame, channels=3)
     if training:
         image = tf.image.random_hue(image, 0.08)
@@ -32,33 +32,16 @@ def decode_and_process_frame(frame, crop_offset, mirror, training):
 def parse_record(tfrecord, training):
     proto = tf.parse_single_example(tfrecord, image_feature_description)
 
-    # if training:
-    #     crop_offset = tf.random.uniform([], -10, 10, tf.dtypes.int32)
-    # else:
-    #     crop_offset = 0
-    crop_offset = 0
-
-    mirror = (not training) or tf.random_uniform([]) < 0.5
-    # mirror = False
-
-    frame_one = decode_and_process_frame(proto['frame_one'], crop_offset, mirror, training)
-    die_roll = tf.random_uniform([])
-    # if (not training) or die_roll < 0.33:
-    if True:
-        frame_two = decode_and_process_frame(proto['frame_two'], crop_offset, mirror, training)
-        position = proto['plus_one_position']
-        orienation = proto['plus_one_orientation']
-        speed = proto['speed']
-    elif die_roll < 0.67:
-        frame_two = decode_and_process_frame(proto['frame_three'], crop_offset, mirror, training)
-        position = proto['plus_two_position']
-        orienation = proto['plus_two_orientation']
-        speed = 2 * proto['speed']
+    if training:
+        mirror = tf.random_uniform([]) < 0.5
     else:
-        frame_two = decode_and_process_frame(proto['frame_four'], crop_offset, mirror, training)
-        position = proto['plus_three_position']
-        orienation = proto['plus_three_orientation']
-        speed = 3 * proto['speed']
+        mirror = False
+
+    frame_one = decode_and_process_frame(proto['frame_one'], mirror, training)
+    frame_two = decode_and_process_frame(proto['frame_two'], mirror, training)
+    position = proto['plus_one_position']
+    orienation = proto['plus_one_orientation']
+    speed = proto['speed']
 
     image = tf.concat((frame_one, frame_two), axis=2)
 
@@ -84,7 +67,7 @@ def load_tfrecord(filename, training):
     dataset = tf.data.TFRecordDataset(filename)
 
     if training:
-        dataset = dataset.shuffle(200000)
+        dataset = dataset.shuffle(300000)
     dataset = dataset.map(lambda x: parse_record(x, training), num_parallel_calls=tf.data.experimental.AUTOTUNE)
     dataset = dataset.flat_map(lambda x: x)
     dataset = dataset.batch(200)
