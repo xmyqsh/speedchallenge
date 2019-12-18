@@ -57,7 +57,7 @@ speed_loss = tf.losses.mean_squared_error(speeds, predicted_speed)
 
 corr = tfp.stats.correlation(speeds, predicted_speed, sample_axis=0, event_axis=None)
 
-saver = tf.train.Saver(tf.trainable_variables())
+saver = tf.train.Saver(tf.global_variables())
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
