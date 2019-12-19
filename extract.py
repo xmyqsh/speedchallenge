@@ -49,9 +49,10 @@ def create_records(cam, speeds):
     return examples
 
 def main():
-    cam = cv2.VideoCapture("data\\train.mp4")
-    frame_velocities = open("data\\train.txt", 'r').readlines()
-    frame_velocities = list(map(lambda x: float(x), frame_velocities))
+    cam = cv2.VideoCapture("data\\test.mp4")
+    # frame_velocities = open("data\\train.txt", 'r').readlines()
+    # frame_velocities = list(map(lambda x: float(x), frame_velocities))
+    frame_velocities = np.zeros((10798,))
 
     frames = []
 
@@ -93,7 +94,7 @@ def main():
 
         previous_frame = frame
 
-    with tf.python_io.TFRecordWriter("D:\\speedchallenge\\monolithic_test.tfrecord") as writer:
+    with tf.python_io.TFRecordWriter("D:\\speedchallenge\\monolithic_final.tfrecord") as writer:
         for e in examples:
             writer.write(e)
 
