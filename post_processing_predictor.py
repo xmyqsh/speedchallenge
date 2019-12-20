@@ -74,7 +74,11 @@ with tf.Session() as sess:
         
         checkpoint = tf.train.get_checkpoint_state(checkpoint_dir)
         if checkpoint and checkpoint.model_checkpoint_path:
+            print("loading checkpoint {}".format(checkpoint.model_checkpoint_path))
             saver.restore(sess, checkpoint.model_checkpoint_path)
+        else:
+            print("couldn't load checkpoint")
+            exit()
     else:
         checkpoint_dir = 'checkpoints/{}'.format(time.strftime("%m_%d_%y-%H_%M"))
         if not os.path.exists(checkpoint_dir):
