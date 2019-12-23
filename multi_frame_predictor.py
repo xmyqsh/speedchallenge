@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
 import time
 import numpy as np
 import loader
@@ -20,22 +19,10 @@ iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
 training_init_op = iterator.make_initializer(training_dataset)
 validation_init_op = iterator.make_initializer(validation_dataset)
 
-frames, positions, orienations, speeds = iterator.get_next()
-
-gt_pose = tf.concat((positions, orienations), axis=1)
+frames, gt_pose, speeds = iterator.get_next()
 
 training = tf.placeholder(tf.bool)
 
-# conv1 = tf.layers.conv2d(frames, 32, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu)
-# conv1 = tf.layers.batch_normalization(conv1, training=training)
-# conv2 = tf.layers.conv2d(conv1, 64, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)
-# conv2 = tf.layers.batch_normalization(conv2, training=training)
-# conv3 = tf.layers.conv2d(conv2, 128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
-# conv3 = tf.layers.batch_normalization(conv2, training=training)
-# conv4 = tf.layers.conv2d(conv3, 256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
-# conv4 = tf.layers.batch_normalization(conv4, training=training)
-# conv5 = tf.layers.conv2d(conv4, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
-# conv5 = tf.layers.batch_normalization(conv5, training=training)
 conv5, (conv4, conv3, conv2, conv1) = nets.encoder_resnet(frames, None, training)
 conv6 = tf.layers.conv2d(conv5, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
 conv7 = tf.layers.conv2d(conv6, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
@@ -50,12 +37,9 @@ loss = tf.losses.mean_squared_error(gt_pose, pose)
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-# validation loss is the predicted at the middle frame
 predicted_speed = 20 * tf.norm(pose[:, :3], axis=1)
 
 speed_loss = tf.losses.mean_squared_error(speeds, predicted_speed)
-
-corr = tfp.stats.correlation(speeds, predicted_speed, sample_axis=0, event_axis=None)
 
 saver = tf.train.Saver(tf.global_variables())
 
@@ -104,18 +88,13 @@ with tf.Session() as sess:
                 break
 
         sess.run(validation_init_op)
-        # losses = []
         speed_losses = []
-        correlations = []
         i = 0
         while True:
             try:
                 i += 1
-                sl, c = sess.run((speed_loss, corr), {training: False})
-                # losses.append(l)
+                sl = sess.run(speed_loss, {training: False})
                 speed_losses.append(sl)
-                correlations.append(c)
             except tf.errors.OutOfRangeError:
                 break
         print('\n\nafter {} epochs speed mse: {:.4f}\n\n'.format(epoch, np.mean(speed_losses)))
-        # print('correlations:\n{}\n\n'.format(correlations))
