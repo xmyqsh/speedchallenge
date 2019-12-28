@@ -52,7 +52,8 @@ def parse_record(tfrecord, training):
     pose = tf.concat((position, orienation), axis=0)
 
     if not training:
-        return tf.data.Dataset.from_tensors((image, pose, speed))
+        # return tf.data.Dataset.from_tensors((image, pose, speed))
+        return tf.data.Dataset.from_tensors((image, pose))
 
     rev_image = tf.concat((frame_two, frame_one), axis=2)
     rev_pose = -1 * pose
@@ -61,7 +62,8 @@ def parse_record(tfrecord, training):
     poses = tf.stack((pose, rev_pose))
     speeds = tf.stack((speed, speed))
 
-    return tf.data.Dataset.from_tensor_slices((images, poses, speeds))
+    # return tf.data.Dataset.from_tensor_slices((images, poses, speeds))
+    return tf.data.Dataset.from_tensor_slices((images, poses))
 
 def load_tfrecord(filename, training):
     dataset = tf.data.TFRecordDataset(filename)
