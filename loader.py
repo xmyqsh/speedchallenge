@@ -51,27 +51,19 @@ def parse_record(tfrecord, training):
 
     pose = tf.concat((position, orienation), axis=0)
 
-    # if not training:
-    # return ({'frames': image}, {'pose': pose, 'speed': speed})
-    return tf.data.Dataset.from_tensors(({'frames': image}, {'pose': pose, 'speed': [speed]}))
+    if not training or tf.random_uniform([]) < 0.5:
+        return {'frames': image}, {'pose': pose, 'speed': [speed]}
+    else:
+        rev_image = tf.concat((frame_two, frame_one), axis=2)
+        rev_pose = -1 * pose
+        return {'frames': rev_image}, {'pose': rev_pose, 'speed': [speed]}
 
-    # rev_image = tf.concat((frame_two, frame_one), axis=2)
-    # rev_pose = -1 * pose
-    
-    # images = tf.stack((image, rev_image))
-    # poses = tf.stack((pose, rev_pose))
-    # speeds = tf.stack((speed, speed))
-
-    # return tf.data.Dataset.from_tensor_slices(([images], [poses, speeds]))
-    # return tf.data.Dataset.from_tensor_slices((images, poses))
-
-def load_tfrecord(filename, training):
+def load_tfrecord(filename, batch_size, training):
     dataset = tf.data.TFRecordDataset(filename)
 
     if training:
         dataset = dataset.shuffle(300000)
     dataset = dataset.map(lambda x: parse_record(x, training), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    dataset = dataset.flat_map(lambda x: x)
-    dataset = dataset.batch(200)
+    dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset

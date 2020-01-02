@@ -1,8 +1,10 @@
 import tensorflow as tf
 import loader
 
-training_dataset = loader.load_tfrecord("/mnt/Bulk/commaai/monolithic_train.tfrecord", True)
-validation_dataset = loader.load_tfrecord("/mnt/Bulk/speedchallenge/monolithic_test.tfrecord", False)
+BATCH_SIZE = 200
+
+training_dataset = loader.load_tfrecord("/mnt/Bulk/commaai/monolithic_train.tfrecord", BATCH_SIZE, True)
+validation_dataset = loader.load_tfrecord("/mnt/Bulk/speedchallenge/monolithic_test.tfrecord", BATCH_SIZE, False)
 
 inputs = tf.keras.Input(shape=(128, 416, 6), name='frames')
 
@@ -35,4 +37,4 @@ model = tf.keras.Model(inputs=inputs, outputs=[pose, speed])
 
 model.compile(optimizer=tf.keras.optimizers.Adam(1e-4), loss={'pose': 'mse', 'speed': 'mse'}, loss_weights={'pose': 1.0, 'speed': 0.0})
 
-model.fit(training_dataset, epochs=10)
+model.fit(training_dataset, epochs=10, validation_data=validation_dataset, validation_steps=10798//BATCH_SIZE)
