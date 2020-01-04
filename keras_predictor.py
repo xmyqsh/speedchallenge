@@ -1,5 +1,6 @@
 import tensorflow as tf
 import loader
+import keras_resnet
 
 BATCH_SIZE = 200
 
@@ -9,16 +10,7 @@ validation_dataset = loader.load_tfrecord("/mnt/Bulk/speedchallenge/monolithic_t
 inputs = tf.keras.Input(shape=(128, 416, 6), name='frames')
 
 # encoder
-conv1 = tf.keras.layers.Conv2D(32, (7, 7), strides=(2, 2), padding='same', activation=tf.nn.relu)(inputs)
-conv1 = tf.keras.layers.BatchNormalization()(conv1)
-conv2 = tf.keras.layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv1)
-conv2 = tf.keras.layers.BatchNormalization()(conv2)
-conv3 = tf.keras.layers.Conv2D(128, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv2)
-conv3 = tf.keras.layers.BatchNormalization()(conv3)
-conv4 = tf.keras.layers.Conv2D(256, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv3)
-conv4 = tf.keras.layers.BatchNormalization()(conv4)
-conv5 = tf.keras.layers.Conv2D(512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv4)
-conv5 = tf.keras.layers.BatchNormalization()(conv5)
+conv5 = keras_resnet.resnet_encoder(inputs)
 
 # thingy
 conv6 = tf.keras.layers.Conv2D(512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv5)
