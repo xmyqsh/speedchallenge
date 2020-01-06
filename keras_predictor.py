@@ -10,7 +10,7 @@ validation_dataset = loader.load_tfrecord("/mnt/Bulk/speedchallenge/monolithic_t
 inputs = tf.keras.Input(shape=(128, 416, 6), name='frames')
 
 # encoder
-conv5 = keras_resnet.resnet_encoder(inputs)
+conv5 = keras_resnet.resnet34_encoder(inputs)
 
 # thingy
 conv6 = tf.keras.layers.Conv2D(512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv5)
