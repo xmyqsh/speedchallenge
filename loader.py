@@ -1,17 +1,17 @@
 import tensorflow as tf
 
 image_feature_description = {
-    'frame_one': tf.FixedLenFeature([], tf.string),
-    'frame_two': tf.FixedLenFeature([], tf.string),
-    'frame_three': tf.FixedLenFeature([], tf.string),
-    'frame_four': tf.FixedLenFeature([], tf.string),
-    'plus_one_position': tf.FixedLenFeature([3], tf.float32),
-    'plus_one_orientation': tf.FixedLenFeature([3], tf.float32),
-    'plus_two_position': tf.FixedLenFeature([3], tf.float32),
-    'plus_two_orientation': tf.FixedLenFeature([3], tf.float32),
-    'plus_three_position': tf.FixedLenFeature([3], tf.float32),
-    'plus_three_orientation': tf.FixedLenFeature([3], tf.float32),
-    'speed': tf.FixedLenFeature([], tf.float32),
+    'frame_one': tf.io.FixedLenFeature([], tf.string),
+    'frame_two': tf.io.FixedLenFeature([], tf.string),
+    'frame_three': tf.io.FixedLenFeature([], tf.string),
+    'frame_four': tf.io.FixedLenFeature([], tf.string),
+    'plus_one_position': tf.io.FixedLenFeature([3], tf.float32),
+    'plus_one_orientation': tf.io.FixedLenFeature([3], tf.float32),
+    'plus_two_position': tf.io.FixedLenFeature([3], tf.float32),
+    'plus_two_orientation': tf.io.FixedLenFeature([3], tf.float32),
+    'plus_three_position': tf.io.FixedLenFeature([3], tf.float32),
+    'plus_three_orientation': tf.io.FixedLenFeature([3], tf.float32),
+    'speed': tf.io.FixedLenFeature([], tf.float32),
 }
 
 def decode_and_process_frame(frame, mirror, training):
@@ -30,10 +30,10 @@ def decode_and_process_frame(frame, mirror, training):
     return image
 
 def parse_record(tfrecord, training):
-    proto = tf.parse_single_example(tfrecord, image_feature_description)
+    proto = tf.io.parse_single_example(tfrecord, image_feature_description)
 
     if training:
-        mirror = tf.random_uniform([]) < 0.5
+        mirror = tf.random.uniform([]) < 0.5
     else:
         mirror = False
 
@@ -51,7 +51,7 @@ def parse_record(tfrecord, training):
 
     pose = tf.concat((position, orienation), axis=0)
 
-    if not training or tf.random_uniform([]) < 0.5:
+    if not training or tf.random.uniform([]) < 0.5:
         return {'frames': image}, {'pose': pose, 'speed': [speed]}
     else:
         rev_image = tf.concat((frame_two, frame_one), axis=2)
