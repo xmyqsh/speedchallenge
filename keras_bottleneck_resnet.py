@@ -10,16 +10,16 @@ def res_bottleneck_block(input, num_channels, stride=1):
     # Residual
     res = tf.keras.layers.Conv2D(num_channels, 1, padding='same')(input)
     res = tf.keras.layers.BatchNormalization()(res)
-    res = tf.keras.layers.Activation(tf.nn.swish)(res)
+    res = tf.keras.layers.Activation(tf.nn.relu)(res)
     res = tf.keras.layers.Conv2D(num_channels, 3, strides=stride, padding='same')(res)
     res = tf.keras.layers.BatchNormalization()(res)
-    res = tf.keras.layers.Activation(tf.nn.swish)(res)
+    res = tf.keras.layers.Activation(tf.nn.relu)(res)
     res = tf.keras.layers.Conv2D(num_channels * 4, 1, padding='same')(res)
     res = tf.keras.layers.BatchNormalization()(res)
 
     # Merge
     out = tf.keras.layers.add([res, shortcut])
-    out = tf.keras.layers.Activation(tf.nn.swish)(out)
+    out = tf.keras.layers.Activation(tf.nn.relu)(out)
 
     return out
 
@@ -29,7 +29,7 @@ def resnet50_encoder(image):
 
     conv1 = tf.keras.layers.Conv2D(encoder_filters[0], 7, strides=stride, padding='same')(image)
     conv1 = tf.keras.layers.BatchNormalization()(conv1)
-    conv1 = tf.keras.layers.Activation(tf.nn.swish)(conv1)
+    conv1 = tf.keras.layers.Activation(tf.nn.relu)(conv1)
     conv1 = tf.keras.layers.MaxPool2D(3, 2, 'same')(conv1)
 
     conv2 = res_bottleneck_block(conv1, encoder_filters[1])
