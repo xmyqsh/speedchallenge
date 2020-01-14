@@ -1,6 +1,6 @@
 import tensorflow as tf
 import loader
-import keras_bottleneck_resnet
+import keras_resnet
 
 BATCH_SIZE = 200
 
@@ -10,7 +10,7 @@ validation_dataset = loader.load_tfrecord("/mnt/Bulk/speedchallenge/monolithic_t
 inputs = tf.keras.Input(shape=(128, 416, 6), name='frames')
 
 # encoder
-conv5 = keras_bottleneck_resnet.resnet50_encoder(inputs)
+conv5 = keras_resnet.resnet18_encoder(inputs)
 
 # thingy
 conv6 = tf.keras.layers.Conv2D(512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv5)
