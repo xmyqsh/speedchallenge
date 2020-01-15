@@ -27,6 +27,6 @@ speed = tf.keras.layers.Lambda(lambda x: tf.expand_dims(20 * tf.norm(x[:, :3], a
 
 model = tf.keras.Model(inputs=inputs, outputs=[pose, speed])
 
-model.compile(optimizer=tf.keras.optimizers.Adam(1e-4), loss={'pose': 'mse', 'speed': 'mse'}, loss_weights={'pose': 1.0, 'speed': 0.0})
+model.compile(optimizer=tf.keras.optimizers.Adam(1e-4), loss={'pose': 'mae', 'speed': 'mse'}, loss_weights={'pose': 1.0, 'speed': 0.0})
 
 model.fit(training_dataset, epochs=10, validation_data=validation_dataset, validation_steps=10798//BATCH_SIZE)
