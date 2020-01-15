@@ -15,37 +15,36 @@ from waymo_open_dataset.utils import transform_utils
 from waymo_open_dataset.utils import  frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
 
-def extract_segment(segment_info):
-    i, segment = segment_info
-    print("working on segment {}".format(i))
-    examples = []
-    for j, data in enumerate(tf.data.TFRecordDataset(segment)):
+def extract_segment(segment):
+    prev_pose = None
+    for i, data in enumerate(tf.data.TFRecordDataset(segment)):
         frame = open_dataset.Frame()
         frame.ParseFromString(bytearray(data.numpy()))
 
-        (range_images, camera_projections,
-        range_image_top_pose) = frame_utils.parse_range_image_and_camera_projection(
-            frame)
-
         image = frame.images[0]
-        speed = np.linalg.norm([image.velocity.v_x, image.velocity.v_y, image.velocity.v_z])
 
-        image_buffer = np.fromstring(image.image, np.uint8)
-        cv2_image = cv2.imdecode(image_buffer, -1)
+        pose = np.array(image.pose.transform)
+        pose = np.reshape(pose, (4, 4))
 
-        examples.append(create_record(cv2_image, speed))
+        if prev_pose is not None:
+            # note: forward, left, up, not forward, right, down!!!
+            rel_pose = np.matmul(np.linalg.inv(prev_pose), pose)
+            speed1 = np.linalg.norm([image.velocity.v_x, image.velocity.v_y, image.velocity.v_z])
+            speed2 = 10 * np.linalg.norm([rel_pose[0][3], rel_pose[1][3], rel_pose[2][3]])
+            print(speed1, speed2)
 
-    write_records(examples, "/mnt/d/waymo/segments/segment_{}.tfrecord".format(i))
+        
+        prev_pose = pose
 
-segment_dirs = glob.glob("/mnt/d/waymo/*.tfrecord")
+        if i == 10:
+            break
 
-print(len(segment_dirs))
+        # image_buffer = np.fromstring(image.image, np.uint8)
+        # cv2_image = cv2.imdecode(image_buffer, -1)
 
-enumerated_dirs = [x for x in enumerate(segment_dirs)]
+        # examples.append(create_record(cv2_image, speed))
 
-print(enumerated_dirs[:10])
 
-with Pool(32) as p:
-    p.map(extract_segment, enumerated_dirs)
+    # write_records(examples, "/mnt/d/waymo/segments/segment_{}.tfrecord".format(i))
 
-# extract_segment((1, "/mnt/d/waymo/segment-15832924468527961_1564_160_1584_160.tfrecord"))
+extract_segment("/mnt/d/waymo/segment-10206293520369375008_2796_800_2816_800_with_camera_labels.tfrecord")
