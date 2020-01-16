@@ -1,24 +1,8 @@
-Welcome to the comma.ai Programming Challenge!
-======
+This repo contains my (current record holding) entry to the [comma.ai speed challenge](https://github.com/commaai/speedchallenge).  The speed challenge is a challenge to predict the speed of a car based solely on dashcam video footage.
 
-Your goal is to predict the speed of a car from a video.
+My entry uses a resnet-based posenet trained on the [comma ai 2k19 dataset](https://github.com/commaai/comma2k19).
 
-- data/train.mp4 is a video of driving containing 20400 frames. Video is shot at 20 fps.
-- data/train.txt contains the speed of the car at each frame, one speed on each line.
-- data/test.mp4 is a different driving video containing 10798 frames. Video is shot at 20 fps.
+Future work:
 
-Deliverable
------
-
-Your deliverable is test.txt. E-mail it to givemeajob@comma.ai, or if you think you did particularly well, e-mail it to George.
-
-Evaluation
------
-
-We will evaluate your test.txt using mean squared error. <10 is good. <5 is better. <3 is heart.
-
-Twitter
-------
-
-<a href="https://twitter.com/comma_ai">Follow us!</a>
-
+  - train on the waymo open dataset for better low speed predictions
+  - use deeper, more modern architectures (replace the resnet18 encoder with an SE resnext50 encoder)
