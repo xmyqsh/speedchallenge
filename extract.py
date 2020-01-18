@@ -49,10 +49,10 @@ def create_records(cam, speeds):
     return examples
 
 def main():
-    cam = cv2.VideoCapture("data\\test.mp4")
-    # frame_velocities = open("data\\train.txt", 'r').readlines()
-    # frame_velocities = list(map(lambda x: float(x), frame_velocities))
-    frame_velocities = np.zeros((10798,))
+    cam = cv2.VideoCapture("data/train.mp4")
+    frame_velocities = open("data/train.txt", 'r').readlines()
+    frame_velocities = list(map(lambda x: float(x), frame_velocities))
+    # frame_velocities = np.zeros((10798,))
 
     frames = []
 
@@ -73,14 +73,12 @@ def main():
             break
 
 
-    previous_frame = frames[0]
-
     examples = []
-    for frame, speed in zip(frames[1:], frame_velocities[1:]):
+    for i in range(len(frames[:-2])):
         example = tf.train.Example(features=tf.train.Features(feature={
-            'frame_one': _bytes_feature(previous_frame),
-            'frame_two': _bytes_feature(frame),
-            'frame_three': _bytes_feature(b""),
+            'frame_one': _bytes_feature(frames[i]),
+            'frame_two': _bytes_feature(frames[i+1]),
+            'frame_three': _bytes_feature(frames[i+2]),
             'frame_four': _bytes_feature(b""),
             'plus_one_position': _float_list_feature([0.0, 0.0, 0.0]),
             'plus_one_orientation': _float_list_feature([0.0, 0.0, 0.0]),
@@ -88,13 +86,12 @@ def main():
             'plus_two_orientation': _float_list_feature([0.0, 0.0, 0.0]),
             'plus_three_position': _float_list_feature([0.0, 0.0, 0.0]),
             'plus_three_orientation': _float_list_feature([0.0, 0.0, 0.0]),
-            'speed': _float_feature(speed),
+            'speed': _float_feature(frame_velocities[i]),
         }))
         examples.append(example.SerializeToString())
 
-        previous_frame = frame
 
-    with tf.python_io.TFRecordWriter("D:\\speedchallenge\\monolithic_final.tfrecord") as writer:
+    with tf.python_io.TFRecordWriter("/mnt/Bulk/speedchallenge/monolithic_multi_framerate.tfrecord") as writer:
         for e in examples:
             writer.write(e)
 

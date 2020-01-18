@@ -72,7 +72,7 @@ def extract_segment(segment):
         example = tf.train.Example(features=tf.train.Features(feature={
             'frame_one': _bytes_feature(frames[i]),
             'frame_two': _bytes_feature(frames[i+1]),
-            'frame_three': _bytes_feature(b""),
+            'frame_three': _bytes_feature(frames[i+1]),
             'frame_four': _bytes_feature(b""),
             'plus_one_position': _float_list_feature(plus_one_position),
             'plus_one_orientation': _float_list_feature(plus_one_orientation),
@@ -107,7 +107,7 @@ def write_tfrecord(segments, out):
         for e in example_buffer:
             writer.write(e)
 
-segments = glob.glob("/mnt/d/waymo/*/*.tfrecord")
+segments = glob.glob("/mnt/Bulk/waymo/*/*.tfrecord")
 random.shuffle(segments)
 
-write_tfrecord(segments, "/mnt/d/waymo/monolithic_train.tfrecord")
+write_tfrecord(segments, "/mnt/Bulk/waymo/monolithic_train.tfrecord")
