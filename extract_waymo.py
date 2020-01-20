@@ -76,8 +76,8 @@ def extract_segment(segment):
             'frame_four': _bytes_feature(b""),
             'plus_one_position': _float_list_feature(plus_one_position),
             'plus_one_orientation': _float_list_feature(plus_one_orientation),
-            'plus_two_position': _float_list_feature([0.0, 0.0, 0.0]),
-            'plus_two_orientation': _float_list_feature([0.0, 0.0, 0.0]),
+            'plus_two_position': _float_list_feature(plus_one_position),
+            'plus_two_orientation': _float_list_feature(plus_one_orientation),
             'plus_three_position': _float_list_feature([0.0, 0.0, 0.0]),
             'plus_three_orientation': _float_list_feature([0.0, 0.0, 0.0]),
             'speed': _float_feature(speeds[i]),
@@ -107,7 +107,7 @@ def write_tfrecord(segments, out):
         for e in example_buffer:
             writer.write(e)
 
-segments = glob.glob("/mnt/Bulk/waymo/*/*.tfrecord")
-random.shuffle(segments)
+# segments = glob.glob("/mnt/Bulk/waymo/*/*.tfrecord")
+# random.shuffle(segments)
 
-write_tfrecord(segments, "/mnt/Bulk/waymo/monolithic_train.tfrecord")
+# write_tfrecord(segments, "/mnt/Bulk/waymo/monolithic_train.tfrecord")

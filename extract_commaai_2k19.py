@@ -104,13 +104,13 @@ def write_tfrecord(dirs, out):
             writer.write(e)
 
 
-segments = glob.glob("/mnt/Bulk/commaai/comma2k19/*/*/*")
-random.shuffle(segments)
+# segments = glob.glob("/mnt/Bulk/commaai/comma2k19/*/*/*")
+# random.shuffle(segments)
 
-train = segments[:1933]
-validation = segments[1933:]
+# train = segments[:1933]
+# validation = segments[1933:]
 
-write_tfrecord(train, "/mnt/Bulk/commaai/monolithic_train.tfrecord")
-write_tfrecord(validation, "/mnt/Bulk/commaai/monolithic_validation.tfrecord")
+# write_tfrecord(train, "/mnt/Bulk/commaai/monolithic_train.tfrecord")
+# write_tfrecord(validation, "/mnt/Bulk/commaai/monolithic_validation.tfrecord")
 
 # extract_segment("/mnt/d/commaai/comma2k19/Chunk_1/b0c9d2329ad1606b_2018-07-27--06-03-57/3")
