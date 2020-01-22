@@ -38,10 +38,24 @@ def parse_record(tfrecord, training):
         mirror = False
 
     frame_one = decode_and_process_frame(proto['frame_one'], mirror, training)
-    frame_two = decode_and_process_frame(proto['frame_two'], mirror, training)
-    position = proto['plus_one_position']
-    orienation = proto['plus_one_orientation']
-    speed = proto['speed']
+
+    frame_delta = tf.random.uniform([])
+    if not training or frame_delta < 0.33:
+        frame_two = decode_and_process_frame(proto['frame_two'], mirror, training)
+        position = proto['plus_one_position']
+        orienation = proto['plus_one_orientation']
+        speed = proto['speed']
+    elif frame_delta < 0.67:
+        frame_two = decode_and_process_frame(proto['frame_three'], mirror, training)
+        position = proto['plus_two_position']
+        orienation = proto['plus_two_orientation']
+        speed = 2 * proto['speed']
+    else:
+        frame_two = decode_and_process_frame(proto['frame_four'], mirror, training)
+        position = proto['plus_three_position']
+        orienation = proto['plus_three_orientation']
+        speed = 3 * proto['speed']
+
 
     image = tf.concat((frame_one, frame_two), axis=2)
 
