@@ -15,8 +15,8 @@ with mirrored_strategy.scope():
     conv5 = keras_senet.se_resnext50_encoder(inputs)
 
     # thingy
-    conv6 = tf.keras.layers.Conv2D(512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv5)
-    conv7 = tf.keras.layers.Conv2D(512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)(conv6)
+    conv6 = tf.keras.layers.Conv2D(512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.swish)(conv5)
+    conv7 = tf.keras.layers.Conv2D(512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.swish)(conv6)
 
     # pose extractor
     pose = tf.keras.layers.Conv2D(6, (1, 1), padding='valid')(conv7)
