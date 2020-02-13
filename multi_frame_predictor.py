@@ -19,9 +19,11 @@ iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
 training_init_op = iterator.make_initializer(training_dataset)
 validation_init_op = iterator.make_initializer(validation_dataset)
 
-frames, gt_pose, speeds = iterator.get_next()
-
+# TODO: It is 2020, please use tensorflow 2.0 and tensorflow.keras coding style
 training = tf.placeholder(tf.bool)
+frames   = tf.placeholder(tf.float, shape=[None, None, None, 3], name='frames')
+gt_pose  = tf.placeholder(tf.float, shape=[None, 6], name='gt_pose')
+speeds   = tf.placeholder(tf.float, shape=[None, 1], name='speeds')
 
 conv5, (conv4, conv3, conv2, conv1) = nets.encoder_resnet(frames, None, training)
 conv6 = tf.layers.conv2d(conv5, 512, (3, 3), strides=(2, 2), padding='same', activation=tf.nn.relu)
@@ -73,7 +75,9 @@ with tf.Session() as sess:
         while True:
             try:
                 i += 1
-                l, sl, _, _ = sess.run((loss, speed_loss, train_step, update_ops), {training: True})
+                frames, gt_pose, speeds = iterator.get_next()
+                l, sl, _, _ = sess.run((loss, speed_loss, train_step, update_ops),
+                                       {training: True, frames: frames, gt_pose: gt_pose, speeds: speeds})
                 losses.append(l)
                 speed_losses.append(sl)
                 if i % 100 == 0:
